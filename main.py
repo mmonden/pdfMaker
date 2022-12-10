@@ -1,5 +1,6 @@
 import PyPDF3 as pdf
 import typing
+import sys
 
 #custom startpage implementing
 
@@ -31,7 +32,7 @@ class PDFMaker():
 
 		x0, y0, x1, y1 = self.getPageSize(inputPage)
 
-		scaling_factor = (self.x1_A4 - 2*self.std_offset_x)/(3*y1 + 2*self.padding)
+		scaling_factor = (self.x1_A4 - 2*self.std_offset_x)/(3*y1 + 2*self.padding)*0.95
 		x1_scaled = x1*scaling_factor
 		y1_scaled = y1*scaling_factor
 
@@ -53,6 +54,7 @@ class PDFMaker():
 			if pageNumber%3 == 0 and pageNumber != 0 and pageNumber%6 != 0:
 				secondRow = self.y1_A4/2
 
+			# TODO: Make padding based on sum of heights of ppt.
 			pages[self.currentPage].mergeRotatedScaledTranslatedPage(inputPage, -90, scaling_factor, self.offsetX - (pageNumber%3 + 1)*y1_scaled - (pageNumber%3)*(self.padding-10) + 5, self.offsetY - secondRow)
 
 		return pages
@@ -67,6 +69,18 @@ class PDFMaker():
 		output.write(open(self.pdf_name[:-4] + "PER6.pdf", "wb"))
 
 	def __init__(self):
+		if len(sys.argv) < 1:
+			print("Specify a file name")
+			exit()
+		else:
+			print(sys.argv[1])
+			self.pdf_name = sys.argv[1]
+
+		custom_start_page = 0					# TODO: Add implementation.
+		if len(sys.argv) == 3:
+			if sys.argv[3] == int:
+				custom_start_page = sys.argv[3]
+
 		pdf_input = pdf.PdfFileReader(open(input(), "rb")) if not self.pdf_name else pdf.PdfFileReader(open(self.pdf_name, "rb"))
 		output = pdf.PdfFileWriter()
 
