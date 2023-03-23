@@ -1,13 +1,10 @@
 import PyPDF3 as pdf
-import os
+import typing
+import sys
 
-for i in range(5, 7):
-	#custom startpage implementing
-	name = "BioMEMS_ch" + str(i)
-	input = pdf.PdfFileReader(open("/Users/matthiasmonden/Downloads/" + name + ".pdf", "rb"))
-	output = pdf.PdfFileWriter()
+#custom startpage implementing
 
-	pages = []
+class PDFMaker():
 	currentPage = -1
 
 	x1_A4 = 612
@@ -20,7 +17,9 @@ for i in range(5, 7):
 	offsetX = x1_A4 - std_offset_x
 	offsetY = y1_A4 - std_offset_y
 
-	def getPageSize(page):
+	pdf_name = "semi.pdf"
+
+	def getPageSize(self, page : pdf.pdf.PageObject) -> typing.Union[int, int, int, int]:
 		x0 = page['/MediaBox'][0]
 		y0 = page['/MediaBox'][1]
 		x1 = page['/MediaBox'][2]
@@ -28,33 +27,66 @@ for i in range(5, 7):
 
 		return x0, y0, x1, y1
 
-	def getScaling(pdf_input, pagenumber):
-		inputPage = pdf_input.getPage(pageNumber)
+	def getScaling(self, pdf_page : pdf.pdf.PageObject, pagenumber : int) -> list[int]:
+		inputPage = pdf_page.getPage(pagenumber)
 
-		x0, y0, x1, y1 = getPageSize(inputPage)
+		x0, y0, x1, y1 = self.getPageSize(inputPage)
 
-		scaling_factor = (x1_A4 - 2*std_offset_x)/(3*y1 + 2*padding)
+		scaling_factor = (self.x1_A4 - 2*self.std_offset_x)/(3*y1 + 2*self.padding)*0.95
 		x1_scaled = x1*scaling_factor
 		y1_scaled = y1*scaling_factor
 
 		return scaling_factor, x1_scaled, y1_scaled
 
-	for pageNumber in range(input.getNumPages()):
-		if pageNumber%6 == 0:
-			pages.append(pdf.PdfFileWriter().addBlankPage(x1_A4, y1_A4))
+	def constructPages(self, pdf_input : pdf.PdfFileReader) -> list[pdf.pdf.PageObject]:
+		pages = []
 
-			currentPage += 1
-			secondRow = 0
+		for pageNumber in range(pdf_input.getNumPages()):
+			if pageNumber%6 == 0:
+				pages.append(pdf.PdfFileWriter().addBlankPage(self.x1_A4, self.y1_A4))
 
-		inputPage = input.getPage(pageNumber)
-		scaling_factor, x1_scaled, y1_scaled = getScaling(input, pageNumber)
+				self.currentPage += 1
+				secondRow = 0
 
-		if pageNumber%3 == 0 and pageNumber != 0 and pageNumber%6 != 0:
-			secondRow = y1_A4/2
+			inputPage = pdf_input.getPage(pageNumber)
+			scaling_factor, x1_scaled, y1_scaled = self.getScaling(pdf_input, pageNumber)
 
-		pages[currentPage].mergeRotatedScaledTranslatedPage(inputPage, -90, scaling_factor, offsetX - (pageNumber%3 + 1)*y1_scaled - (pageNumber%3)*(padding-10) + 5, offsetY - secondRow)
+			if pageNumber%3 == 0 and pageNumber != 0 and pageNumber%6 != 0:
+				secondRow = self.y1_A4/2
 
-	for p in pages:
-		output.addPage(p.rotateCounterClockwise(90))
+			# TODO: Make padding based on sum of heights of ppt.
+			pages[self.currentPage].mergeRotatedScaledTranslatedPage(inputPage, -90, scaling_factor, self.offsetX - (pageNumber%3 + 1)*y1_scaled - (pageNumber%3)*(self.padding-10) + 5, self.offsetY - secondRow)
 
-	output.write(open("/Users/matthiasmonden/Downloads/MEMS_Slides-" + str(i) + "_per6.pdf", "wb"))
+		return pages
+
+	def rotateAllPages(self, pages : list[pdf.pdf.PageObject], output : pdf.PdfFileWriter) -> pdf.PdfFileWriter:
+		for p in pages:
+			output.addPage(p.rotateCounterClockwise(90))
+
+		return output
+
+	def writeOutput(self, pdf_input : pdf.PdfFileReader, output : pdf.PdfFileWriter) -> None:
+		output.write(open(self.pdf_name[:-4] + "PER6.pdf", "wb"))
+
+	def __init__(self):
+		if len(sys.argv) < 1:
+			print("Specify a file name")
+			exit()
+		else:
+			print(sys.argv[1])
+			self.pdf_name = sys.argv[1]
+
+		custom_start_page = 0					# TODO: Add implementation.
+		if len(sys.argv) == 3:
+			if sys.argv[3] == int:
+				custom_start_page = sys.argv[3]
+
+		pdf_input = pdf.PdfFileReader(open(input(), "rb")) if not self.pdf_name else pdf.PdfFileReader(open(self.pdf_name, "rb"))
+		output = pdf.PdfFileWriter()
+
+		pages = self.constructPages(pdf_input)
+		output = self.rotateAllPages(pages, output)
+
+		self.writeOutput(pdf_input, output)
+
+PDFMaker()
