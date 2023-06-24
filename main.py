@@ -20,10 +20,10 @@ class PDFMaker():
 	pdf_name = "semi.pdf"
 
 	def getPageSize(self, page : pdf.pdf.PageObject) -> typing.Union[int, int, int, int]:
-		x0 = page['/MediaBox'][0]
-		y0 = page['/MediaBox'][1]
-		x1 = page['/MediaBox'][2]
-		y1 = page['/MediaBox'][3]
+		x0 = float(page['/MediaBox'][0])
+		y0 = float(page['/MediaBox'][1])
+		x1 = float(page['/MediaBox'][2])
+		y1 = float(page['/MediaBox'][3])
 
 		return x0, y0, x1, y1
 
